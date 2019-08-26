@@ -652,67 +652,56 @@ Quat Basis::get_quat() const {
 	return Quat(temp[0], temp[1], temp[2], temp[3]);
 }
 
-static const Basis _ortho_bases[24] = {
-	Basis(1, 0, 0, 0, 1, 0, 0, 0, 1),
-	Basis(0, -1, 0, 1, 0, 0, 0, 0, 1),
-	Basis(-1, 0, 0, 0, -1, 0, 0, 0, 1),
-	Basis(0, 1, 0, -1, 0, 0, 0, 0, 1),
-	Basis(1, 0, 0, 0, 0, -1, 0, 1, 0),
-	Basis(0, 0, 1, 1, 0, 0, 0, 1, 0),
-	Basis(-1, 0, 0, 0, 0, 1, 0, 1, 0),
-	Basis(0, 0, -1, -1, 0, 0, 0, 1, 0),
-	Basis(1, 0, 0, 0, -1, 0, 0, 0, -1),
-	Basis(0, 1, 0, 1, 0, 0, 0, 0, -1),
-	Basis(-1, 0, 0, 0, 1, 0, 0, 0, -1),
-	Basis(0, -1, 0, -1, 0, 0, 0, 0, -1),
-	Basis(1, 0, 0, 0, 0, 1, 0, -1, 0),
-	Basis(0, 0, -1, 1, 0, 0, 0, -1, 0),
-	Basis(-1, 0, 0, 0, 0, -1, 0, -1, 0),
-	Basis(0, 0, 1, -1, 0, 0, 0, -1, 0),
-	Basis(0, 0, 1, 0, 1, 0, -1, 0, 0),
-	Basis(0, -1, 0, 0, 0, 1, -1, 0, 0),
-	Basis(0, 0, -1, 0, -1, 0, -1, 0, 0),
-	Basis(0, 1, 0, 0, 0, -1, -1, 0, 0),
-	Basis(0, 0, 1, 0, -1, 0, 1, 0, 0),
-	Basis(0, 1, 0, 0, 0, 1, 1, 0, 0),
-	Basis(0, 0, -1, 0, 1, 0, 1, 0, 0),
-	Basis(0, -1, 0, 0, 0, -1, 1, 0, 0)
-};
-
 int Basis::get_orthogonal_index() const {
 
-	//could be sped up if i come up with a way
-	Basis orth = *this;
-	for (int i = 0; i < 3; i++) {
-		for (int j = 0; j < 3; j++) {
+	Basis trans = Basis(0, 1, 0, 0, 0, 1, 1, 0, 0);
+	Basis orth = this -> orthonormalized();
+	int p_index = 0;
 
-			real_t v = orth[i][j];
-			if (v > 0.5)
-				v = 1.0;
-			else if (v < -0.5)
-				v = -1.0;
-			else
-				v = 0;
+	if (Math::abs(orth.get_axis(0)[2]) > 0.57735)
+		p_index = p_index + 32;
+	else if (Math::abs(orth.get_axis(0)[1]) > 0.57735)
+		p_index = p_index + 16;
+	if (orth.get_axis(0).dot(Vector3(1, 1, 1)) < 0)
+		p_index = p_index + 8;
+	if (Math::abs(trans.xform(orth.get_axis(0)).dot(orth.get_axis(1))) > 0.57735)
+		p_index = p_index + 4;
+	if (orth.get_axis(1).dot(Vector3(1, 1, 1)) < 0)
+		p_index = p_index + 2;
+	if (orth.get_axis(2).dot(orth.get_axis(0).cross(orth.get_axis(1))) < 0)
+		p_index = p_index + 1;
 
-			orth[i][j] = v;
-		}
-	}
-
-	for (int i = 0; i < 24; i++) {
-
-		if (_ortho_bases[i] == orth)
-			return i;
-	}
-
-	return 0;
+	return p_index;
 }
 
 void Basis::set_orthogonal_index(int p_index) {
 
-	//there only exist 24 orthogonal bases in r3
-	ERR_FAIL_INDEX(p_index, 24);
+	//there only exist 24 orthogonal bases in r3 and 24 mirrored bases
+	ERR_FAIL_INDEX(p_index, 48);
 
-	*this = _ortho_bases[p_index];
+	Vector3 x, y, z;
+	Basis trans = Basis(0, 1, 0, 0, 0, 1, 1, 0, 0);
+	Basis orth;
+	if (p_index & 32)
+		x = Vector3(0, 0, 1);
+	else if (p_index & 16)
+		x = Vector3(0, 1, 0);
+	else
+		x = Vector3(1, 0, 0);
+	if (p_index & 4)
+		y = trans.xform(x);
+	else
+		y = trans.xform_inv(x);
+	if (p_index & 8)
+		x = x * -1;
+	if (p_index & 2)
+		y = y * -1;
+	z = x.cross(y);
+	if (p_index & 1)
+		z = z * -1;
+	orth.set(x, y ,z);
+
+	*this = orth;
 }
 
 void Basis::get_axis_angle(Vector3 &r_axis, real_t &r_angle) const {
