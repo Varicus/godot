@@ -72,7 +72,7 @@ class GridMap : public Spatial {
 
 		struct {
 			unsigned int item : 16;
-			unsigned int rot : 5;
+			unsigned int rot : 6;
 			unsigned int layer : 8;
 		};
 		uint32_t cell;

@@ -219,6 +219,9 @@ void GridMapEditor::_menu_option(int p_option) {
 		} break;
 		case MENU_OPTION_CURSOR_CLEAR_ROTATION: {
 
+			int idx = options->get_popup()->get_item_index(MENU_OPTION_CURSOR_MIRROR);
+			options->get_popup()->set_item_checked(idx, false);
+
 			if (input_action == INPUT_PASTE) {
 
 				paste_indicator.orientation = 0;
@@ -227,6 +230,26 @@ void GridMapEditor::_menu_option(int p_option) {
 			}
 
 			cursor_rot = 0;
+			_update_cursor_transform();
+		} break;
+		case MENU_OPTION_CURSOR_MIRROR: {
+
+			int idx = options->get_popup()->get_item_index(MENU_OPTION_CURSOR_MIRROR);
+			options->get_popup()->set_item_checked(idx, !options->get_popup()->is_item_checked(idx));
+
+			Basis r;
+			if (input_action == INPUT_PASTE) {
+
+				r.set_orthogonal_index(paste_indicator.orientation);
+				r.scale(Vector3(-1, -1, -1));
+				paste_indicator.orientation = r.get_orthogonal_index();
+				_update_paste_indicator();
+				break;
+			}
+
+			r.set_orthogonal_index(cursor_rot);
+			r.scale(Vector3(-1, -1, -1));
+			cursor_rot = r.get_orthogonal_index();
 			_update_cursor_transform();
 		} break;
 
@@ -1262,6 +1285,7 @@ GridMapEditor::GridMapEditor(EditorNode *p_editor) {
 	options->get_popup()->add_item(TTR("Cursor Back Rotate Y"), MENU_OPTION_CURSOR_BACK_ROTATE_Y, KEY_MASK_SHIFT + KEY_S);
 	options->get_popup()->add_item(TTR("Cursor Back Rotate Z"), MENU_OPTION_CURSOR_BACK_ROTATE_Z, KEY_MASK_SHIFT + KEY_D);
 	options->get_popup()->add_item(TTR("Cursor Clear Rotation"), MENU_OPTION_CURSOR_CLEAR_ROTATION, KEY_W);
+	options->get_popup()->add_check_item(TTR("Cursor Mirror"), MENU_OPTION_CURSOR_MIRROR, KEY_T);
 	options->get_popup()->add_separator();
 	options->get_popup()->add_check_item("Paste Selects", MENU_OPTION_PASTE_SELECTS);
 	options->get_popup()->add_separator();

@@ -704,15 +704,27 @@ int Basis::get_orthogonal_index() const {
 			return i;
 	}
 
+	//check the mirror bases now
+	orth.scale(Vector3(-1, -1, -1));
+
+	for (int i = 24; i < 48; i++) {
+
+		if (_ortho_bases[i - 24] == orth)
+			return i;
+	}
+
 	return 0;
 }
 
 void Basis::set_orthogonal_index(int p_index) {
 
-	//there only exist 24 orthogonal bases in r3
-	ERR_FAIL_INDEX(p_index, 24);
-
-	*this = _ortho_bases[p_index];
+	//there are 24 ordered and 24 mirrored orthogonal bases in r3
+	ERR_FAIL_INDEX(p_index, 48);
+	if (p_index < 24) {
+		*this = _ortho_bases[p_index];
+	} else {
+		*this = _ortho_bases[p_index - 24].scaled(Vector3(-1, -1, -1));
+	}
 }
 
 void Basis::get_axis_angle(Vector3 &r_axis, real_t &r_angle) const {
